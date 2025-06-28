@@ -42,7 +42,7 @@ class PitchTuner extends TpaServer {
           const [pitch, clarity] = detector.findPitch(audioBuffer, sr);
           if (pitch && clarity > .8) {
             const note = this.frequencyToNote(pitch);
-            if (!note.includes('undefined')) {
+            if (!note.includes('undefined') || !note.includes('-')) {
               logger.info(note);
               session.layouts.showTextWall(note, {durationMs: 5000});
             }
@@ -76,7 +76,7 @@ class PitchTuner extends TpaServer {
     const noteName = ['C', 'C#/Db', 'D', 'D#/Eb', 'E', 'F', 'F#/Gb', 'G', 'G#/Ab', 'A', 'A#/Bb', 'B'];
     const semitone = 12 * Math.log2(freq / A4);
     const noteIndex = Math.round(semitone) + 9;
-    const octave = Math.floor(((Math.round(semitone) + 69) / 12) - 1)
+    const octave = Math.floor(((Math.round(semitone) + 69) / 12) - 2) //Actually find the correct math or fix the frequency coming in 1 octave to high
     const note = noteName[(noteIndex + 12) % 12];
     return `${note}${octave}`;
   }
