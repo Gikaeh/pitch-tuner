@@ -28,5 +28,6 @@
     "url": "https://github.com/Gikaeh/pitch-tuner/issues"
   },
   "homepage": "https://github.com/Gikaeh/pitch-tuner#readme",
-  "description": ""
+  "description": "",
+  "packageManager": "^bun@1.2.17"
 }
