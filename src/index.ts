@@ -71,6 +71,7 @@ class PitchTuner extends TpaServer {
   }
 
   protected frequencyToNote(freq: number): string {
+    console.log(freq);
     const A4 = 440;
     const noteName = ['C', 'C#/Db', 'D', 'D#/Eb', 'E', 'F', 'F#/Gb', 'G', 'G#/Ab', 'A', 'A#/Bb', 'B'];
     const semitone = 12 * Math.log2(freq / A4);
