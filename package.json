@@ -12,8 +12,10 @@
   },
   "name": "pitch-tuner",
   "version": "1.0.0",
-  "main": "src/index.ts",
+  "main": "index.js",
   "scripts": {
+    "start": "bun src/index.ts",
+    "dev": "bun --hot src/index.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
