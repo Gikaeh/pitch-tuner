@@ -4,6 +4,12 @@ import {PitchDetector} from 'pitchy'
 import logger from './utils/logger'
 import {config} from './config/environment';
 
+const defaultSettings = {
+  tuning: 'free_tuning'
+};
+
+const userTuning: Map<string, string> = new Map();
+
 class PitchTuner extends TpaServer {
     private activeUserSessions = new Map<string, {session: TpaSession, sessionId: string}>();
 
@@ -19,11 +25,31 @@ class PitchTuner extends TpaServer {
 
   // Called when new user connects to app
   protected async onSession(session: TpaSession, sessionId: string, userId: string): Promise<void> {
-    console.log(`New session started: ${sessionId} for user: ${userId}`);
+    logger.info(`New session started: ${sessionId} for user: ${userId}`);
+
+    this.activeUserSessions.set(userId, {session, sessionId});
+
+    try {
+      this.setupSettingsHandlers(session, sessionId, userId);
+      await this.applySettings(session, sessionId, userId);
+    } catch (error) {
+      logger.error(`Error initializing settings for user ${userId}.`, {
+        userId: userId,
+        error: {
+          message: error.message,
+          stack: error.stack,
+          responseStatus: error.response?.status,
+          responseBody: error.response?.data 
+        }
+      });
+
+      userTuning.set(userId, defaultSettings.tuning);
+    }
 
     const detector = PitchDetector.forFloat32Array(2048);
     const audioBuffer = new Float32Array(2048);
     let bufferOffset = 0;
+    var i = 0;
 
     session.subscribe(StreamType.AUDIO_CHUNK);
     const audioCleanup = session.events.onAudioChunk((data) => {
@@ -43,8 +69,25 @@ class PitchTuner extends TpaServer {
           if (pitch && clarity > .8) {
             const note = this.frequencyToNote(pitch);
             if (!note.includes('undefined') || !note.includes('-')) {
-              logger.info(note);
-              session.layouts.showTextWall(note, {durationMs: 5000});
+
+              logger.debug(`Note: ${note}, Index: ${i}`);
+              switch (userTuning.get(userId)) {
+                case 'free_tuning':
+                  session.layouts.showTextWall(`🎶 ${note}`, {durationMs: 5000});
+                  break;
+
+                case 'basic_tuning':
+                  i = this.specificTuning(session, note, 'EADGBE', i);
+                  break;
+
+                case 'drop_d_tuning':
+                  i = this.specificTuning(session, note, 'DADGBE', i);
+                  break;
+
+                default:
+                  logger.warn('Unknown tuning.');
+                  break;
+              }
             }
           }
           bufferOffset = 0;
@@ -71,14 +114,56 @@ class PitchTuner extends TpaServer {
   }
 
   protected frequencyToNote(freq: number): string {
-    console.log(freq);
-    const A4 = 440;
+    logger.debug(freq);
+    const A4 = 220;
     const noteName = ['C', 'C#/Db', 'D', 'D#/Eb', 'E', 'F', 'F#/Gb', 'G', 'G#/Ab', 'A', 'A#/Bb', 'B'];
     const semitone = 12 * Math.log2(freq / A4);
     const noteIndex = Math.round(semitone) + 9;
-    const octave = Math.floor(((Math.round(semitone) + 69) / 12) - 2) //Actually find the correct math or fix the frequency coming in 1 octave to high
+    const octave = Math.floor(((Math.round(semitone) + 69) / 12) - 1) //Actually find the correct math or fix the frequency coming in 1 octave to high
     const note = noteName[(noteIndex + 12) % 12];
     return `${note}${octave}`;
+  }
+
+  protected specificTuning(session: TpaSession, note: string, tuning: string, i: number): number {
+    if (note[0] === tuning[i] && i < 5) {
+      session.layouts.showTextWall(`🎶 Perfect! Move to the next string ${tuning[i+1]}.`, {durationMs: 5000});
+      i++;
+    } if (note[0] === tuning[i] && i === 5) {
+      session.layouts.showTextWall(`🎶 Perfect! All strings tuned.`, {durationMs: 5000});
+      i++;
+    } if (i >= 6) {
+      session.layouts.showTextWall(`🎶 All strings tuned. Restarting tuning or switch tune to free tuning in settings.`, {durationMs: 5000});
+    } else {
+      session.layouts.showTextWall(`🎶 ${note[0]} -> ${tuning[i]}`, {durationMs: 5000});
+    }
+
+    return i;
+  }
+
+  private setupSettingsHandlers(session: TpaSession, sessionId: string, userId: string): void {
+    session.settings.onValueChange('tuning', (newValue, oldValue) => {
+      logger.info(`Tuning type changed for user ${userId}: ${oldValue} -> ${newValue}`);
+      this.applySettings(session, sessionId, userId);
+    });
+  }
+
+  private async applySettings(session: TpaSession, sessionId: string, userId: string): Promise<void> {
+    try {
+      const tuningType = session.setting.get<string>('tuning', defaultSettings.tuning);
+      userTuning.set(userId, tuningType);
+      logger.info(`[Session ${sessionId}]: tuning=${tuningType}`);
+    } catch (error) {
+      logger.error(`Error fetching settings for user ${userId}.`, {
+        userId: userId,
+        error: {
+          message: error.message,
+          stack: error.stack,
+          responseStatus: error.response?.status,
+          responseBody: error.response?.data 
+        }
+      });
+      throw error;
+    }
   }
 }
 
