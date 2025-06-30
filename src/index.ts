@@ -28,6 +28,7 @@ class PitchTuner extends TpaServer {
     logger.info(`New session started: ${sessionId} for user: ${userId}`);
 
     this.activeUserSessions.set(userId, {session, sessionId});
+    userTuning.set(userId, defaultSettings.tuning)
 
     try {
       this.setupSettingsHandlers(session, sessionId, userId);
@@ -42,8 +43,6 @@ class PitchTuner extends TpaServer {
           responseBody: error.response?.data 
         }
       });
-
-      userTuning.set(userId, defaultSettings.tuning);
     }
 
     const detector = PitchDetector.forFloat32Array(2048);
@@ -115,11 +114,11 @@ class PitchTuner extends TpaServer {
 
   protected frequencyToNote(freq: number): string {
     logger.debug(freq);
-    const A4 = 220;
+    const A4 = 440;
     const noteName = ['C', 'C#/Db', 'D', 'D#/Eb', 'E', 'F', 'F#/Gb', 'G', 'G#/Ab', 'A', 'A#/Bb', 'B'];
     const semitone = 12 * Math.log2(freq / A4);
     const noteIndex = Math.round(semitone) + 9;
-    const octave = Math.floor(((Math.round(semitone) + 69) / 12) - 1) //Actually find the correct math or fix the frequency coming in 1 octave to high
+    const octave = Math.floor(((Math.round(semitone) + 69) / 12) - 2) //Actually find the correct math or fix the frequency coming in 1 octave to high
     const note = noteName[(noteIndex + 12) % 12];
     return `${note}${octave}`;
   }
