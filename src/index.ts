@@ -79,7 +79,7 @@ class PitchTuner extends TpaServer {
                 case 'basic_tuning':
                   newI = this.specificTuning(session, note, 'EADGBE', i);
                   if (newI > i) {
-                    sleep(1000);
+                    sleep(2000);
                   }
                   i = newI;
                   break;
@@ -87,7 +87,7 @@ class PitchTuner extends TpaServer {
                 case 'drop_d_tuning':
                   newI = this.specificTuning(session, note, 'DADGBE', i);
                   if (newI > i) {
-                    sleep(1000);
+                    sleep(2000);
                   }
                   i = newI;
                   break;
