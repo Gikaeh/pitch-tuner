@@ -130,7 +130,8 @@ class PitchTuner extends TpaServer {
       session.layouts.showTextWall(`🎶 Perfect! All strings tuned.`, {durationMs: 5000});
       i++;
     } if (i >= 6) {
-      session.layouts.showTextWall(`🎶 All strings tuned. Restarting tuning or switch tune to free tuning in settings.`, {durationMs: 5000});
+      session.layouts.showTextWall(`🎶 All strings tuned. Restarting tuning or switch tuning to free tuning in settings.`, {durationMs: 5000});
+      i = 0;
     } else {
       session.layouts.showTextWall(`🎶 ${note[0]} -> ${tuning[i]}`, {durationMs: 5000});
     }
