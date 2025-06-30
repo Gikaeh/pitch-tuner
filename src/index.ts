@@ -3,6 +3,7 @@ import {TpaServer, TpaSession, StreamType} from '@augmentos/sdk'
 import {PitchDetector} from 'pitchy'
 import logger from './utils/logger'
 import {config} from './config/environment';
+import {setTimeout as sleep} from 'timers/promises';
 
 const defaultSettings = {
   tuning: 'free_tuning'
@@ -48,7 +49,7 @@ class PitchTuner extends TpaServer {
     const detector = PitchDetector.forFloat32Array(2048);
     const audioBuffer = new Float32Array(2048);
     let bufferOffset = 0;
-    var i = 0;
+    let i = 0;
 
     session.subscribe(StreamType.AUDIO_CHUNK);
     const audioCleanup = session.events.onAudioChunk((data) => {
@@ -68,6 +69,7 @@ class PitchTuner extends TpaServer {
           if (pitch && clarity > .8) {
             const note = this.frequencyToNote(pitch);
             if (!note.includes('undefined') && !note.includes('-')) {
+              let newI = 0
               logger.debug(`Note: ${note}, Index: ${i}`);
               switch (userTuning.get(userId)) {
                 case 'free_tuning':
@@ -75,11 +77,19 @@ class PitchTuner extends TpaServer {
                   break;
 
                 case 'basic_tuning':
-                  i = this.specificTuning(session, note, 'EADGBE', i);
+                  newI = this.specificTuning(session, note, 'EADGBE', i);
+                  if (newI > i) {
+                    sleep(1000);
+                  }
+                  i = newI;
                   break;
 
                 case 'drop_d_tuning':
-                  i = this.specificTuning(session, note, 'DADGBE', i);
+                  newI = this.specificTuning(session, note, 'DADGBE', i);
+                  if (newI > i) {
+                    sleep(1000);
+                  }
+                  i = newI;
                   break;
 
                 default:
