@@ -67,8 +67,7 @@ class PitchTuner extends TpaServer {
           const [pitch, clarity] = detector.findPitch(audioBuffer, sr);
           if (pitch && clarity > .8) {
             const note = this.frequencyToNote(pitch);
-            if (!note.includes('undefined') || !note.includes('-')) {
-
+            if (!note.includes('undefined') && !note.includes('-')) {
               logger.debug(`Note: ${note}, Index: ${i}`);
               switch (userTuning.get(userId)) {
                 case 'free_tuning':
@@ -148,7 +147,7 @@ class PitchTuner extends TpaServer {
 
   private async applySettings(session: TpaSession, sessionId: string, userId: string): Promise<void> {
     try {
-      const tuningType = session.setting.get<string>('tuning', defaultSettings.tuning);
+      const tuningType = session.settings.get<string>('tuning', defaultSettings.tuning);
       userTuning.set(userId, tuningType);
       logger.info(`[Session ${sessionId}]: tuning=${tuningType}`);
     } catch (error) {
